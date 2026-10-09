@@ -1,0 +1,134 @@
+import { Callout } from "@/components/course/callout";
+
+export const metadata = {
+  title: "Lecture 1: Introduction & Intelligent Agents",
+  description: "Foundational definitions of AI, rationality vs omniscience, PEAS specification, and agent architecture classification.",
+  week: 1,
+  date: "2025-01-15",
+};
+
+Welcome to **CS 101: Introduction to Artificial Intelligence**. In this opening lecture, we lay down the conceptual foundation for what constitutes artificial intelligence, how we formally define an **agent**, and how we evaluate rational behavior in complex environments.
+
+---
+
+## 1. What is an Intelligent Agent?
+
+At its core, artificial intelligence is the study and design of **intelligent agents**. An **agent** is anything that perceives its environment through sensors and acts upon that environment through actuators.
+
+```
+                  +-------------------+
+                  |    Environment    |
+                  +---------+---------+
+                            |
+                     Percepts (Sensors)
+                            |
+                            v
+                  +---------+---------+
+                  |       Agent       |
+                  |                   |
+                  |  Percept -> Action|
+                  +---------+---------+
+                            |
+                     Actions (Actuators)
+                            |
+                            v
+                  +---------+---------+
+                  |    Environment    |
+                  +-------------------+
+```
+
+### The Percept Sequence
+
+An agent's behavior is described mathematically by the **agent function**, which maps any given sequence of percepts to an action:
+
+`f: P* -> A`
+
+Where `P*` represents the history of all percept sequences received by the agent up to the current time step, and `A` is the set of possible actions available to the agent.
+
+<Callout type="info" title="Key Distinction: Function vs. Program">
+The **agent function** is an abstract mathematical mapping from percept histories to actions. The **agent program** is the concrete implementation running on physical or virtual computing hardware.
+</Callout>
+
+---
+
+## 2. Rationality vs. Omniscience
+
+A fundamental design objective in AI is creating **rational agents**. What makes an action rational?
+
+> **Rationality** depends on four factors:
+> 1. The **performance measure** defining success criteria.
+> 2. The agent's **prior knowledge** of the environment.
+> 3. The **actions** that the agent can perform.
+> 4. The agent's **percept sequence** to date.
+
+<Callout type="warning" title="Rationality vs. Omniscience">
+Do not confuse **rationality** with **omniscience**! An *omniscient* agent knows the actual outcome of its actions and can act accordingly; but omniscience is impossible in reality. Rationality maximizes *expected* performance given current knowledge, whereas omniscience maximizes *actual* performance.
+</Callout>
+
+---
+
+## 3. The PEAS Framework
+
+Before designing an agent, software architects must define the task environment using the **PEAS** framework:
+
+- **P**erformance Measure: The objective metrics used to evaluate the agent's behavior.
+- **E**nvironment: The external conditions, constraints, and state space in which the agent operates.
+- **A**ctuators: The operational mechanisms through which the agent acts upon the environment.
+- **S**ensors: The input devices or APIs through which the agent receives percepts.
+
+### Example PEAS Specification: Autonomous Delivery Agent
+
+| PEAS Component | Description |
+| :--- | :--- |
+| **Performance Measure** | Safety, on-time delivery percentage, energy efficiency, customer satisfaction |
+| **Environment** | Urban streets, sidewalks, weather conditions, dynamic pedestrian obstacles |
+| **Actuators** | Electric drive motors, steering servos, indicator lights, notification speaker |
+| **Sensors** | Cameras, LiDAR, ultrasonic proximity sensors, GPS module, IMU telemetry |
+
+---
+
+## 4. Agent Architectures & Control Loops
+
+We classify agent architectures into four primary categories based on their internal structure and decision-making depth:
+
+1. **Simple Reflex Agents**: Act purely on the current percept, ignoring history (Condition-Action rules).
+2. **Model-Based Reflex Agents**: Maintain internal state to track unseen parts of the world.
+3. **Goal-Based Agents**: Combine state tracking with explicit goal destinations to plan actions.
+4. **Utility-Based Agents**: Use a utility function to make trade-offs between competing goals.
+
+### Code Sketch: Simple Control Loop in Python
+
+```python
+from typing import Any, Protocol
+
+class Percept:
+    def __init__(self, data: dict[str, Any]):
+        self.data = data
+
+class Agent(Protocol):
+    def select_action(self, percept: Percept) -> str:
+        ...
+
+class SimpleReflexAgent:
+    def __init__(self) -> None:
+        self.rules = {
+            "obstacle_ahead": "stop_and_turn",
+            "clear_path": "move_forward",
+            "battery_low": "return_to_dock",
+        }
+
+    def select_action(self, percept: Percept) -> str:
+        status = percept.data.get("status", "clear_path")
+        return self.rules.get(status, "move_forward")
+
+# Execution loop
+def agent_loop(agent: Agent, environment) -> None:
+    while environment.is_active():
+        percept = environment.get_percept()
+        action = agent.select_action(percept)
+        environment.apply_action(action)
+```
+
+<Callout type="tip" title="Next Up in Week 2">
+In Week 2, we will extend stateful agents with explicit pathfinding and heuristic search algorithms like A* and Dijkstra!
+</Callout>
