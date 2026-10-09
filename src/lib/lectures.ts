@@ -11,7 +11,7 @@ export interface LectureMetadata {
 
 const LECTURES_DIR = path.join(process.cwd(), "src/content/lectures");
 
-function parseMetadata(fileContent: string): Record<string, string> {
+export function parseMetadata(fileContent: string): Record<string, string> {
   const metadata: Record<string, string> = {};
 
   // 1. Try matching YAML frontmatter: --- ... ---
@@ -42,13 +42,13 @@ function parseMetadata(fileContent: string): Record<string, string> {
     return metadata;
   }
 
-  // 2. Try matching JS export metadata: export const metadata = { ... };
-  const jsExportRegex = /export\s+const\s+metadata\s*=\s*\{([\s\S]*?)\};/;
+  // 2. Try matching JS export metadata: export const metadata = { ... } (semicolon optional)
+  const jsExportRegex = /export\s+const\s+metadata\s*=\s*\{([\s\S]*?)\}\s*;?/;
   const jsExportMatch = jsExportRegex.exec(fileContent);
 
   if (jsExportMatch) {
     const body = jsExportMatch[1];
-    const propertyRegex = /(\w+)\s*:\s*(?:"([^"]*)"|'([^']*)'|(\d+)|([^,\n]+))/g;
+    const propertyRegex = /(?:["']?(\w+)["']?)\s*:\s*(?:"([^"]*)"|'([^']*)'|(\d+)|([^,\n}]+))/g;
     let match;
     while ((match = propertyRegex.exec(body)) !== null) {
       const key = match[1];
