@@ -188,7 +188,7 @@ export default function SyllabusPage() {
                     <TableCell className="text-right font-bold text-primary">
                       {item.weight}
                     </TableCell>
-                    <TableCell className="text-muted-foreground leading-relaxed">
+                    <TableCell className="text-muted-foreground leading-relaxed whitespace-normal">
                       {item.description}
                     </TableCell>
                   </TableRow>
