@@ -54,7 +54,7 @@ export default function AssessmentsPage() {
                       {item.weight}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
+                  <TableCell className="text-muted-foreground text-sm whitespace-normal">
                     {item.description}
                   </TableCell>
                 </TableRow>
