@@ -1,8 +1,6 @@
 import React from "react";
-import Link from "next/link";
 import {
   BookOpen,
-  Calendar,
   CheckCircle2,
   ExternalLink,
   GraduationCap,
