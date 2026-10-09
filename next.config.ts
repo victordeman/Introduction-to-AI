@@ -7,6 +7,18 @@ const nextConfig: NextConfig = {
 
 const withMDX = createMDX({
   extension: /\.mdx?$/,
+  options: {
+    remarkPlugins: [],
+    rehypePlugins: [
+      [
+        "rehype-pretty-code",
+        {
+          theme: "github-dark",
+          keepBackground: true,
+        },
+      ],
+    ],
+  },
 });
 
 export default withMDX(nextConfig);
