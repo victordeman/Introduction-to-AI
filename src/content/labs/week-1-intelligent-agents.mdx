@@ -1,0 +1,162 @@
+---
+title: "Lab 1: Building PEAS Agent Architectures"
+description: "Implement simple reflexive and goal-based agent environments defined by PEAS performance metrics."
+week: 1
+category: "Foundations"
+---
+
+# Lab 1: Building PEAS Agent Architectures
+
+Welcome to **Lab 1: Building PEAS Agent Architectures**! In this lab, you will explore the foundational concepts of artificial intelligence agents by modeling environments and implementing agent control loops defined by **PEAS** (Performance, Environment, Actuators, Sensors).
+
+---
+
+## 1. Conceptual Framework & PEAS Analysis
+
+An **agent** is anything that perceives its environment through **sensors** and acts upon that environment through **actuators**. A **rational agent** selects actions expected to maximize its performance measure given the evidence provided by the percept sequence and built-in knowledge.
+
+<Callout type="info" title="PEAS Framework Overview">
+Before writing code for any agent system, you must clearly specify the **PEAS** components:
+- **Performance Measure**: The criteria that evaluate how successful the agent is.
+- **Environment**: The external world or state space in which the agent operates.
+- **Actuators**: The mechanisms or methods by which the agent exerts actions.
+- **Sensors**: The mechanisms or inputs through which the agent receives percepts.
+</Callout>
+
+### PEAS Specifications Table
+
+The table below outlines PEAS specifications for several classical and modern agent domains:
+
+| Agent Type | Performance Measure | Environment | Actuators | Sensors |
+| :--- | :--- | :--- | :--- | :--- |
+| **Vacuum Cleaner Agent** | Cleanliness score, energy used, time taken | Grid cells, dirt presence, wall obstacles | Motors, suction unit, steering | Bump sensors, dirt sensor, location sensor |
+| **Automated Taxi Driver** | Safe arrival, speed, legal compliance, passenger comfort | Roads, traffic, pedestrians, weather | Steering wheel, accelerator, brake, horn | Cameras, LiDAR, radar, GPS, speedometer |
+| **Medical Diagnostic Assistant** | Diagnostic accuracy, treatment efficiency, patient outcome | Patient records, lab tests, symptom reports | Diagnostic reports, treatment plans | Keyboard inputs, EHR database feeds |
+| **Autonomous Trading Agent** | ROI, risk-adjusted returns, minimal slippage | Stock exchange feeds, news feeds, order books | Limit orders, market orders, cancel requests | Real-time price feeds, order depth API |
+
+---
+
+## 2. Python Starter Code: Agent & Environment Loop Skeleton
+
+Below is the object-oriented Python starter code for an agent control loop simulation. You will complete the implementation of the `SimpleReflexiveAgent` and the `GridEnvironment`.
+
+<Callout type="tip" title="Design Strategy">
+Notice how the environment generates percepts for the agent, and the agent returns an action that updates the environment state. Keep the agent's internal state decoupled from the environment's full ground truth!
+</Callout>
+
+```python
+from typing import Dict, Any, Tuple
+import random
+
+class Environment:
+    """Base class for simulated agent environments."""
+
+    def __init__(self, width: int = 5, height: int = 5):
+        self.width = width
+        self.height = height
+        self.grid = {}
+        self.reset()
+
+    def reset(self) -> None:
+        """Initialize environment grid with random dirt placement."""
+        for x in range(self.width):
+            for y in range(self.height):
+                # 30% chance of dirt in cell
+                self.grid[(x, y)] = "dirty" if random.random() < 0.3 else "clean"
+
+    def get_percept(self, agent_location: Tuple[int, int]) -> Dict[str, Any]:
+        """Return the current percept for an agent at the given location."""
+        status = self.grid.get(agent_location, "clean")
+        return {
+            "location": agent_location,
+            "status": status,
+        }
+
+    def execute_action(self, agent_location: Tuple[int, int], action: str) -> Tuple[Tuple[int, int], int]:
+        """
+        Execute an agent action and return (new_location, reward).
+        Actions: 'suck', 'move_north', 'move_south', 'move_east', 'move_west', 'noop'
+        """
+        reward = 0
+        x, y = agent_location
+
+        if action == "suck":
+            if self.grid.get((x, y)) == "dirty":
+                self.grid[(x, y)] = "clean"
+                reward = 10  # Performance reward for cleaning
+            else:
+                reward = -1  # Penalty for unnecessary suck
+
+        elif action == "move_north":
+            y = max(0, y - 1)
+            reward = -1  # Energy cost
+        elif action == "move_south":
+            y = min(self.height - 1, y + 1)
+            reward = -1
+        elif action == "move_east":
+            x = min(self.width - 1, x + 1)
+            reward = -1
+        elif action == "move_west":
+            x = max(0, x - 1)
+            reward = -1
+
+        return (x, y), reward
+
+
+class SimpleReflexiveAgent:
+    """A simple reflex agent that acts based solely on current percepts."""
+
+    def __init__(self, name: str = "ReflexAgent"):
+        self.name = name
+        self.total_score = 0
+        self.location = (0, 0)
+
+    def perceive_and_act(self, percept: Dict[str, Any]) -> str:
+        """
+        Condition-Action Rules:
+        1. If current cell is dirty -> 'suck'
+        2. Otherwise -> pick a random move direction
+        """
+        status = percept.get("status")
+        if status == "dirty":
+            return "suck"
+
+        # Simple random exploration rule
+        actions = ["move_north", "move_south", "move_east", "move_west"]
+        return random.choice(actions)
+
+
+def run_simulation(steps: int = 20) -> None:
+    """Run an agent-environment loop for a given number of time steps."""
+    env = Environment(width=3, height=3)
+    agent = SimpleReflexiveAgent()
+
+    print(f"=== Starting Simulation: {agent.name} ===")
+    for step in range(1, steps + 1):
+        percept = env.get_percept(agent.location)
+        action = agent.perceive_and_act(percept)
+        new_loc, reward = env.execute_action(agent.location, action)
+
+        agent.location = new_loc
+        agent.total_score += reward
+
+        print(f"Step {step:02d} | Percept: {percept} -> Action: '{action}' | Score: {agent.total_score}")
+
+
+if __name__ == "__main__":
+    run_simulation(10)
+```
+
+---
+
+## 3. Lab Deliverables & Checklist
+
+To complete Lab 1, complete the following items in your starter notebook:
+
+- [ ] **Part 1**: Write out a complete PEAS analysis for an **AI Automated Code Reviewer**.
+- [ ] **Part 2**: Extend `SimpleReflexiveAgent` to create a `ModelBasedAgent` that maintains an internal map of clean vs. dirty cells to avoid revisiting clean areas.
+- [ ] **Part 3**: Run 100 benchmark trials comparing the average performance score of `SimpleReflexiveAgent` vs `ModelBasedAgent`.
+
+<Callout type="warning" title="Submission Warning">
+Ensure your code passes all unit tests in `test_lab1.py` before submitting your pull request to the course grading repo!
+</Callout>

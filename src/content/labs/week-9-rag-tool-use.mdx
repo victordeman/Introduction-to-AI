@@ -1,0 +1,190 @@
+# Lab 9: RAG Pipeline & Vector Databases
+
+Welcome to **Lab 9: RAG Pipeline & Vector Databases**! In this lab, you will build an end-to-end Retrieval-Augmented Generation (RAG) system integrated with LLM tool calling and function execution.
+
+---
+
+## 1. Overview & Architecture
+
+**Retrieval-Augmented Generation (RAG)** combines dense vector retrieval with large language model generation. Instead of relying solely on the LLM's parametric memory (which can suffer from knowledge cutoffs and hallucinations), RAG retrieves relevant document chunks from an external knowledge base and injects them into the model's prompt context.
+
+```
+ [User Query] ---> [Embedding Model] ---> [Vector DB Search]
+                                                 |
+                                         (Top-K Context)
+                                                 v
+ [User Query + Context] ---------> [LLM Generation] ---------> [Final Answer]
+```
+
+<Note title="Key RAG Concepts">
+- **Document Chunking:** Splitting raw text files into manageable segments (e.g., 512 tokens with 50-token overlap).
+- **Dense Embeddings:** Mapping text chunks into high-dimensional vector representations where semantic similarity corresponds to vector proximity.
+- **Cosine Similarity:** A metric measuring the angle between two embedding vectors in vector space.
+- **Function Calling / Tool Use:** Allowing the LLM to emit structured JSON function calls to query external databases or execute APIs when context is missing.
+</Note>
+
+---
+
+## 2. Python Starter Code & Code Placeholders
+
+Below is the structured starter code for your RAG pipeline implementation. Fill in the missing logic in `get_embedding`, `VectorStore.search`, and `agent_function_call_loop`.
+
+<Tip title="Optimization Tip">
+When implementing `cosine_similarity`, normalize your embedding vectors first or use `numpy.dot` on pre-normalized vectors for fastest vector search execution!
+</Tip>
+
+```python
+import math
+from typing import List, Dict, Any, Optional
+
+# =====================================================================
+# 1. EMBEDDING GENERATION PLACEHOLDER
+# =====================================================================
+
+def get_embedding(text: str) -> List[float]:
+    """
+    PLACEHOLDER: In production, call OpenAI, Cohere, or HuggingFace API.
+    For local testing, returns a mock 4-dimensional normalized vector based on character hashes.
+    """
+    hash_val = sum(ord(c) for c in text)
+    v = [
+        math.sin(hash_val * 0.1),
+        math.cos(hash_val * 0.2),
+        math.sin(hash_val * 0.3),
+        math.cos(hash_val * 0.4),
+    ]
+    # Normalize vector to unit length
+    norm = math.sqrt(sum(x * x for x in v))
+    return [x / norm for x in v]
+
+
+# =====================================================================
+# 2. VECTOR STORE & COSINE SIMILARITY
+# =====================================================================
+
+class DocumentChunk:
+    def __init__(self, doc_id: str, content: str, embedding: List[float]):
+        self.doc_id = doc_id
+        self.content = content
+        self.embedding = embedding
+
+
+class VectorStore:
+    """Simple in-memory vector store for semantic document search."""
+
+    def __init__(self):
+        self.chunks: List[DocumentChunk] = []
+
+    def add_document(self, doc_id: str, text: str) -> None:
+        """Embed text and store document chunk."""
+        embedding = get_embedding(text)
+        chunk = DocumentChunk(doc_id, text, embedding)
+        self.chunks.append(chunk)
+
+    @staticmethod
+    def cosine_similarity(v1: List[float], v2: List[float]) -> float:
+        """Calculate dot product of two normalized unit vectors."""
+        # TODO: Implement cosine similarity calculation
+        return sum(a * b for a, b in zip(v1, v2))
+
+    def search(self, query: str, top_k: int = 2) -> List[Dict[str, Any]]:
+        """
+        Query the vector store and return top_k most relevant chunks.
+        """
+        query_emb = get_embedding(query)
+        results = []
+
+        for chunk in self.chunks:
+            score = self.cosine_similarity(query_emb, chunk.embedding)
+            results.append({
+                "doc_id": chunk.doc_id,
+                "content": chunk.content,
+                "score": score
+            })
+
+        # Sort results descending by similarity score
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:top_k]
+
+
+# =====================================================================
+# 3. FUNCTION CALLING & AGENTIC TOOL USE
+# =====================================================================
+
+# Schema definition for the vector store lookup tool
+VECTOR_SEARCH_TOOL_SCHEMA = {
+    "name": "search_knowledge_base",
+    "description": "Searches the domain knowledge base for technical information.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "The search query to look up in vector database.",
+            },
+            "top_k": {
+                "type": "integer",
+                "description": "Number of document chunks to retrieve.",
+                "default": 2,
+            },
+        },
+        "required": ["query"],
+    },
+}
+
+
+def execute_tool_call(tool_name: str, args: Dict[str, Any], vector_db: VectorStore) -> str:
+    """Execute tool calls requested by the agent."""
+    if tool_name == "search_knowledge_base":
+        query = args.get("query", "")
+        top_k = args.get("top_k", 2)
+        results = vector_db.search(query, top_k=top_k)
+
+        formatted_context = "\n".join(
+            [f"[{r['doc_id']}] (Score: {r['score']:.2f}): {r['content']}" for r in results]
+        )
+        return formatted_context or "No relevant documents found."
+
+    return f"Error: Unknown tool name '{tool_name}'"
+
+
+def run_rag_pipeline_demo():
+    """Demo walkthrough setting up vector DB and querying context."""
+    db = VectorStore()
+    db.add_document("doc_01", "Transformer models use self-attention mechanisms to weigh token dependencies.")
+    db.add_document("doc_02", "Retrieval-Augmented Generation injects external context into prompt messages.")
+    db.add_document("doc_03", "Vector databases store dense embeddings and compute k-nearest neighbors.")
+
+    user_query = "How does RAG work with vector stores?"
+    print(f"User Query: {user_query}\n")
+
+    # Simulate tool call
+    retrieved_info = execute_tool_call(
+        "search_knowledge_base",
+        {"query": user_query, "top_k": 2},
+        db
+    )
+    print("=== Retrieved Knowledge Base Context ===")
+    print(retrieved_info)
+
+if __name__ == "__main__":
+    run_rag_pipeline_demo()
+```
+
+---
+
+## 3. Potential Edge Cases & Pitfalls
+
+<Warning title="Common RAG Failure Modes">
+- **Chunk Truncation:** If document chunks split sentences mid-way, key semantic facts may be lost across chunk boundaries.
+- **Lost in the Middle:** LLMs tend to pay more attention to the beginning and end of long retrieved contexts while missing facts placed in the middle.
+- **Hallucinated Tool Calls:** Ensure strict JSON schema validation when parsing tool call arguments returned by the LLM.
+</Warning>
+
+---
+
+## 4. Lab 9 Exercises
+
+1. **Chunking Pipeline:** Implement a Recursive Text Splitter function with 50-character overlaps.
+2. **Evaluation Metric:** Implement Precision@K and Recall@K metrics to measure vector store retrieval quality against a test dataset.
+3. **ReAct Tool Loop:** Connect the vector search tool to a multi-step ReAct agent loop.
