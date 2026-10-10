@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, AlertCircle } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import { labs } from "@/data/labs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
